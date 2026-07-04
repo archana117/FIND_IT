@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 h-[85vh]">
+    <div class="glass-panel rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden h-full flex">
+        
+        <!-- Left Panel: Contacts List -->
+        <div class="w-1/3 border-r border-slate-200/50 dark:border-slate-800/50 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950/20">
+            <div class="p-4 border-b border-slate-200/50 dark:border-slate-800/50">
+                <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-200">Conversations</h3>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto divide-y divide-slate-100 dark:divide-slate-850">
+                {% if not partners %}
+                    <div class="p-8 text-center text-slate-400">
+                        <i class="fa-solid fa-comments text-3xl mb-2"></i>
+                        <p class="text-xs">No active chats. Start one by requesting contact details on matching items!</p>
+                    </div>
+                {% else %}
+                    {% for p in partners %}
+                        <a href="{{ url_for('chat.conversation', partner_id=p.partner_id) }}" 
+                           class="flex items-center space-x-3 p-4 hover:bg-blue-50/50 dark:hover:bg-slate-800/30 transition-colors block {% if active_partner and active_partner.id == p.partner_id %}bg-blue-50 dark:bg-slate-800/50{% endif %}"
+                           data-partner-id="{{ p.partner_id }}">
+                            
+                            <!-- Avatar / Status Indicator -->
+                            <div class="relative flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold font-outfit">
+                                    {{ p.username[0]|upper }}
+                                </div>
+                                <span class="partner-status-dot absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 {% if p.online %}bg-green-500{% else %}bg-slate-400{% endif %}"></span>
+                            </div>
+                            
+                            <!-- User Info -->
+                            <div class="flex-grow min-w-0">
+                                <div class="flex justify-between items-center">
+                                    <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ p.username }}</h4>
+                                    <span class="text-[10px] text-slate-400 uppercase font-semibold">{{ p.role }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Unread count badge -->
+                            <div class="unread-badge {% if not p.unread_count %}hidden{% endif %} flex-shrink-0 bg-blue-600 text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                {{ p.unread_count }}
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Right Panel: Conversation Details -->
+        <div class="w-2/3 flex flex-col h-full bg-white dark:bg-slate-900">
+            {% if not active_partner %}
+                <!-- No active conversation view -->
+                <div class="flex-grow flex flex-col justify-center items-center text-slate-400 bg-slate-50/30 dark:bg-slate-950/10">
+                    <i class="fa-solid fa-paper-plane text-5xl mb-4 text-slate-300 dark:text-slate-800"></i>
+                    <h3 class="text-lg font-bold font-outfit text-slate-700 dark:text-slate-400">Your Chat Box</h3>
+                    <p class="text-xs text-slate-400 max-w-xs text-center mt-1">Select a contact from the left list to begin messaging securely in real-time.</p>
+                </div>
+            {% else %}
+                
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold font-outfit">
+                            {{ active_partner.username[0]|upper }}
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ active_partner.username }}</h4>
+                            <span id="active-status-text" class="text-xs text-slate-400">
+                                {% if active_partner.id in online_users %}Online{% else %}Offline{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Messages Box -->
+                <div id="messages-container" class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-950/10">
+                    {% for msg in messages %}
+                        <div class="flex {% if msg.sender_id == session['user_id'] %}justify-end{% else %}justify-start{% endif %}">
+                            <div class="max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm text-sm 
+                                {% if msg.sender_id == session['user_id'] %}
+                                    bg-blue-600 text-white rounded-tr-none
+                                {% else %}
+                                    bg-slate-100 dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-tl-none
+                                {% endif %}">
+                                
+                                {% if msg.message %}
+                                    <p>{{ msg.message }}</p>
+                                {% endif %}
+                                
+                                {% if msg.image_path %}
+                                    <img src="{{ msg.image_path }}" class="max-w-xs rounded-lg mt-2 cursor-zoom-in" onclick="window.open(this.src)" alt="Attached Image">
+                                {% endif %}
+                                
+                                <div class="flex items-center justify-end space-x-1 mt-1 text-[10px] {% if msg.sender_id == session['user_id'] %}text-blue-100{% else %}text-slate-400{% endif %}">
+                                    <span>{{ msg.created_at }}</span>
+                                    {% if msg.sender_id == session['user_id'] %}
+                                        <span class="read-status">
+                                            {% if msg.is_read %}
+                                                <i class="fa-solid fa-check-double text-blue-300"></i>
+                                            </h4>
+                                            {% else %}
+                                                <i class="fa-solid fa-check"></i>
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Image Attachment Preview -->
+                <div id="chat-img-preview" class="hidden p-3 border-t border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-850 flex items-center space-x-3">
+                    <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
+                        <img id="attachment-preview" src="#" class="object-cover w-full h-full">
+                        <button type="button" onclick="clearAttachment()" class="absolute top-0.5 right-0.5 bg-slate-900/80 hover:bg-red-600 text-white p-0.5 rounded-full">
+                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                        </button>
+                    </div>
+                    <span class="text-xs text-slate-500">Image attached. Press send to upload.</span>
+                </div>
+                
+                <!-- Chat Input Footer -->
+                <div class="p-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                    <form id="chat-form" class="flex items-center space-x-3">
+                        <!-- Attachment Button -->
+                        <button type="button" onclick="document.getElementById('chat-file-input').click()" 
+                            class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-500 transition-colors">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                        <input type="file" id="chat-file-input" accept="image/*" class="hidden" onchange="previewAttachment(this)">
+                        
+                        <!-- Text Input -->
+                        <div class="relative flex-grow">
+                            <input type="text" id="chat-input" required autocomplete="off"
+                                class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-slate-100 text-sm"
+                                placeholder="Type your message securely...">
+                            <button type="button" onclick="startChatVoice()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-blue-500 transition-colors" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Send Button -->
+                        <button type="submit" 
+                            class="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-all">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Socket.IO Frontend Code -->
+<script src="https://cdn.socketio.org/4.7.2/socketio.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Only run socket code if a conversation is open
+        {% if active_partner %}
+            const socket = io();
+            const container = document.getElementById("messages-container");
+            const activePartnerId = {{ active_partner.id }};
+            const currentUserId = {{ session['user_id'] }};
+            
+            // Scroll to bottom immediately
+            container.scrollTop = container.scrollHeight;
+            
+            // Emit read receipt on load
+            socket.emit('mark_read', { sender_id: activePartnerId });
+            
+            // Receive Message
+            socket.on('new_msg', function(data) {
+                if (data.sender_id === activePartnerId || data.sender_id === currentUserId) {
+                    const isSelf = data.sender_id === currentUserId;
+                    
+                    // Create message element
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `flex ${isSelf ? 'justify-end' : 'justify-start'}`;
+                    
+                    let imgTag = "";
+                    if (data.image_path) {
+                        imgTag = `<img src="${data.image_path}" class="max-w-xs rounded-lg mt-2 cursor-zoom-in" onclick="window.open(this.src)" alt="Attached Image">`;
+                    }
+                    
+                    msgDiv.innerHTML = `
+                        <div class="max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm text-sm ${isSelf ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-100 dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-tl-none'}">
+                            <p>${data.message}</p>
+                            ${imgTag}
+                            <div class="flex items-center justify-end space-x-1 mt-1 text-[10px] ${isSelf ? 'text-blue-100' : 'text-slate-400'}">
+                                <span>${data.created_at}</span>
+                                ${isSelf ? '<span class="read-status"><i class="fa-solid fa-check"></i></span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(msgDiv);
+                    container.scrollTop = container.scrollHeight;
+                    
+                    // If we received an incoming message, mark it as read immediately
+                    if (!isSelf) {
+                        socket.emit('mark_read', { sender_id: activePartnerId });
+                    }
+                } else {
+                    // Message is from someone else, increment unread badge on left panel
+                    const partnerRow = document.querySelector(`[data-partner-id="${data.sender_id}"]`);
+                    if (partnerRow) {
+                        const badge = partnerRow.querySelector('.unread-badge');
+                        if (badge) {
+                            let count = parseInt(badge.textContent.trim()) || 0;
+                            badge.textContent = count + 1;
+                            badge.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+            
+            // Partner Read our messages
+            socket.on('messages_read', function(data) {
+                if (data.reader_id === activePartnerId) {
+                    // Update all checkmarks to check-double
+                    const readIndicators = document.querySelectorAll('.read-status');
+                    readIndicators.forEach(ind => {
+                        ind.innerHTML = '<i class="fa-solid fa-check-double text-blue-300"></i>';
+                    });
+                }
+            });
+            
+            // Monitor Online Status Changes
+            socket.on('status_change', function(data) {
+                const partnerId = data.user_id;
+                const status = data.status;
+                
+                // Update status dot on left list
+                const row = document.querySelector(`[data-partner-id="${partnerId}"]`);
+                if (row) {
+                    const dot = row.querySelector('.partner-status-dot');
+                    if (dot) {
+                        if (status === 'online') {
+                            dot.className = "partner-status-dot absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 bg-green-500";
+                        } else {
+                            dot.className = "partner-status-dot absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 bg-slate-400";
+                        }
+                    }
+                }
+                
+                // Update active status text if it is the current active partner
+                if (partnerId === activePartnerId) {
+                    document.getElementById('active-status-text').textContent = status === 'online' ? 'Online' : 'Offline';
+                }
+            });
+            
+            // Attachment Handling
+            let attachedBase64 = null;
+            window.previewAttachment = function(input) {
+                const file = input.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('attachment-preview').src = e.target.result;
+                        document.getElementById('chat-img-preview').classList.remove('hidden');
+                        attachedBase64 = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            };
+            
+            window.clearAttachment = function() {
+                document.getElementById('chat-file-input').value = '';
+                document.getElementById('chat-img-preview').classList.add('hidden');
+                attachedBase64 = null;
+            };
+            
+            // Form Submit event
+            document.getElementById("chat-form").addEventListener("submit", function(e) {
+                e.preventDefault();
+                const input = document.getElementById("chat-input");
+                const msg = input.value.trim();
+                
+                if (msg || attachedBase64) {
+                    socket.emit('send_msg', {
+                        recipient_id: activePartnerId,
+                        message: msg,
+                        image: attachedBase64
+                    });
+                    input.value = '';
+                    clearAttachment();
+                }
+            });
+            
+            // Chat Voice input dictation
+            window.startChatVoice = function() {
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                
+                const inputField = document.getElementById('chat-input');
+                const micIcon = document.querySelector(`[onclick="startChatVoice()"] i`);
+                
+                if (micIcon) {
+                    micIcon.className = "fa-solid fa-microphone animate-ping text-red-500";
+                }
+                
+                recognition.start();
+                
+                recognition.onresult = function(event) {
+                    const res = event.results[0][0].transcript;
+                    inputField.value = inputField.value ? inputField.value + ' ' + res : res;
+                };
+                
+                recognition.onend = function() {
+                    if (micIcon) micIcon.className = "fa-solid fa-microphone";
+                };
+                recognition.onerror = function() {
+                    if (micIcon) micIcon.className = "fa-solid fa-microphone";
+                };
+            };
+            
+        {% endif %}
+    });
+</script>
+{% endblock %}

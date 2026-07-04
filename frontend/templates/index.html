@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="relative overflow-hidden">
+    <!-- Background Blob Glows -->
+    <div class="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[-15%] w-[600px] h-[600px] rounded-full bg-indigo-400/20 dark:bg-indigo-600/10 blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24 relative">
+        <!-- Hero Section -->
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/30 uppercase inline-block mb-4">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 animate-pulse"></i> AI-Powered Matching Platform
+            </span>
+            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight font-outfit mb-6 text-slate-900 dark:text-white">
+                Reconnecting You with <br>
+                <span class="text-gradient-brand">Your Lost Belongings</span>
+            </h1>
+            <p class="text-lg sm:text-xl text-slate-600 dark:text-slate-400 font-light mb-8 leading-relaxed">
+                FindIt is a smart Lost & Found network that leverages AI matching models to cross-reference names, category parameters, location coordinates, and image histograms, ensuring lost objects return home quickly.
+            </p>
+            
+            <!-- Hero CTAs -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <a href="{{ url_for('items.report_lost') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-center shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all">
+                    <i class="fa-solid fa-circle-question mr-2"></i> Report Lost Item
+                </a>
+                <a href="{{ url_for('items.report_found') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold text-center shadow-lg hover:shadow-xl transition-all">
+                    <i class="fa-solid fa-camera mr-2"></i> Report Found Item
+                </a>
+                <a href="{{ url_for('search') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-center transition-all">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Search Items
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-20 bg-white/40 dark:bg-slate-950/20 backdrop-blur-md rounded-3xl p-6 border border-slate-200/50 dark:border-slate-800/30">
+            <div class="text-center p-4">
+                <div class="text-3xl sm:text-4xl font-extrabold text-blue-600 dark:text-blue-400 font-outfit">{{ stats.total_lost }}</div>
+                <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Lost Reports</div>
+            </div>
+            <div class="text-center p-4 border-l border-slate-200/60 dark:border-slate-800/40">
+                <div class="text-3xl sm:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 font-outfit">{{ stats.total_found }}</div>
+                <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Found Uploads</div>
+            </div>
+            <div class="text-center p-4 border-l border-slate-200/60 dark:border-slate-800/40">
+                <div class="text-3xl sm:text-4xl font-extrabold text-green-600 dark:text-green-400 font-outfit">{{ stats.total_matches }}</div>
+                <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Smart Matches</div>
+            </div>
+            <div class="text-center p-4 border-l border-slate-200/60 dark:border-slate-800/40">
+                <div class="text-3xl sm:text-4xl font-extrabold text-purple-600 dark:text-purple-400 font-outfit">{{ stats.resolved_matches }}</div>
+                <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Items Returned</div>
+            </div>
+        </div>
+
+        <!-- Dynamic Content Tabs (Recent Items) -->
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-8 border-b border-slate-200 dark:border-slate-850 pb-4">
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white">
+                    Recent Listings
+                </h2>
+                <!-- Tabs controllers -->
+                <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <button id="tab-lost-btn" onclick="switchRecentTab('lost')" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm transition-all">
+                        Lost Items
+                    </button>
+                    <button id="tab-found-btn" onclick="switchRecentTab('found')" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all">
+                        Found Items
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 1: Lost Items -->
+            <div id="tab-lost-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% if stats.recent_lost %}
+                    {% for item in stats.recent_lost %}
+                        <div class="glass-panel glow-card rounded-3xl overflow-hidden flex flex-col h-full shadow-lg">
+                            <div class="relative h-48 bg-slate-200 dark:bg-slate-850 overflow-hidden flex items-center justify-center">
+                                {% if item.image_path %}
+                                    <img src="{% if item.image_path.startswith('http') %}{{ item.image_path }}{% else %}{{ url_for('static', filename='uploads/' + item.image_path.split('/')[-1]) }}{% endif %}" alt="{{ item.item_name }}" class="object-cover w-full h-full">
+                                {% else %}
+                                    <div class="text-center text-slate-400">
+                                        <i class="fa-solid fa-image text-4xl mb-2"></i>
+                                        <p class="text-xs">No Image Available</p>
+                                    </div>
+                                {% endif %}
+                                <span class="absolute top-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500 text-white shadow-sm">
+                                    LOST
+                                </span>
+                                <span class="absolute bottom-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900/60 backdrop-blur-md text-white border border-white/20">
+                                    {{ item.category }}
+                                </span>
+                            </div>
+                            <div class="p-6 flex-grow flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 font-outfit">{{ item.item_name }}</h3>
+                                    <p class="text-sm text-slate-500 dark:text-slate-450 line-clamp-3 mb-4 leading-relaxed">{{ item.description }}</p>
+                                </div>
+                                <div class="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col space-y-2">
+                                    <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-location-dot w-4 text-blue-500"></i>
+                                        <span class="truncate ml-1">{{ item.location }}</span>
+                                    </div>
+                                    <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-calendar w-4 text-blue-500"></i>
+                                        <span class="ml-1">{{ item.date_lost }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-span-full text-center py-12 text-slate-500">
+                        <i class="fa-regular fa-folder-open text-5xl mb-3 text-slate-400"></i>
+                        <p>No recent lost items reported.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Tab 2: Found Items (Hidden by default) -->
+            <div id="tab-found-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 hidden">
+                {% if stats.recent_found %}
+                    {% for item in stats.recent_found %}
+                        <div class="glass-panel glow-card rounded-3xl overflow-hidden flex flex-col h-full shadow-lg">
+                            <div class="relative h-48 bg-slate-200 dark:bg-slate-850 overflow-hidden flex items-center justify-center">
+                                {% if item.image_path %}
+                                    <img src="{% if item.image_path.startswith('http') %}{{ item.image_path }}{% else %}{{ url_for('static', filename='uploads/' + item.image_path.split('/')[-1]) }}{% endif %}" alt="{{ item.item_name }}" class="object-cover w-full h-full">
+                                {% else %}
+                                    <div class="text-center text-slate-400">
+                                        <i class="fa-solid fa-image text-4xl mb-2"></i>
+                                        <p class="text-xs">No Image Available</p>
+                                    </div>
+                                {% endif %}
+                                <span class="absolute top-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500 text-white shadow-sm">
+                                    FOUND
+                                </span>
+                                <span class="absolute bottom-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900/60 backdrop-blur-md text-white border border-white/20">
+                                    {{ item.category }}
+                                </span>
+                            </div>
+                            <div class="p-6 flex-grow flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 font-outfit">{{ item.item_name }}</h3>
+                                    <p class="text-sm text-slate-500 dark:text-slate-455 line-clamp-3 mb-4 leading-relaxed">{{ item.description }}</p>
+                                </div>
+                                <div class="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col space-y-2">
+                                    <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-location-dot w-4 text-emerald-500"></i>
+                                        <span class="truncate ml-1">{{ item.location }}</span>
+                                    </div>
+                                    <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-calendar w-4 text-emerald-500"></i>
+                                        <span class="ml-1">{{ item.date_found }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-span-full text-center py-12 text-slate-500">
+                        <i class="fa-regular fa-folder-open text-5xl mb-3 text-slate-400"></i>
+                        <p>No recent found items reported.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchRecentTab(type) {
+        const lostBtn = document.getElementById('tab-lost-btn');
+        const foundBtn = document.getElementById('tab-found-btn');
+        const lostContent = document.getElementById('tab-lost-content');
+        const foundContent = document.getElementById('tab-found-content');
+        
+        if (type === 'lost') {
+            lostBtn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm transition-all";
+            foundBtn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-white transition-all";
+            lostContent.classList.remove('hidden');
+            foundContent.classList.add('hidden');
+        } else {
+            foundBtn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm transition-all";
+            lostBtn.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-white transition-all";
+            foundContent.classList.remove('hidden');
+            lostContent.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}

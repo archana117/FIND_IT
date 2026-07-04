@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-12">
+    
+    {% if show_requests_only %}
+    <!-- Contact Requests Manager Page -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white mb-2">
+            Contact Authorization requests
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400">
+            Control who can view your phone number and email address. Protect your privacy by approving only legitimate owners/finders.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Incoming Requests -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+            <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-250 mb-4 pb-2 border-b border-slate-100 dark:border-slate-850">
+                <i class="fa-solid fa-inbox text-blue-500 mr-2"></i> Received Requests (Pending Approval)
+            </h3>
+            
+            {% if not requests.incoming %}
+                <p class="text-sm text-slate-400 py-6 text-center">No pending contact requests received.</p>
+            {% else %}
+                <div class="space-y-4">
+                    {% for r in requests.incoming %}
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col justify-between md:flex-row md:items-center gap-4">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ r.requester_name }}
+                                </p>
+                                <p class="text-xs text-slate-400">
+                                    Wants to chat regarding found item: <strong>{{ r.item_name }}</strong>
+                                </p>
+                                <span class="text-[10px] text-slate-400 block mt-1">{{ r.created_at }}</span>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <form action="{{ url_for('matches.approve_contact', request_id=r.request_id) }}" method="POST">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                                        Approve
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('matches.reject_contact', request_id=r.request_id) }}" method="POST">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-750 text-white text-xs font-semibold shadow-sm transition-colors">
+                                        Decline
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Outgoing Requests -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+            <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-250 mb-4 pb-2 border-b border-slate-100 dark:border-slate-850">
+                <i class="fa-solid fa-paper-plane text-indigo-500 mr-2"></i> Sent Requests (Outgoing)
+            </h3>
+            
+            {% if not requests.outgoing %}
+                <p class="text-sm text-slate-400 py-6 text-center">No contact requests submitted.</p>
+            {% else %}
+                <div class="space-y-4">
+                    {% for r in requests.outgoing %}
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                    Requested contact with owner of <strong>{{ r.item_name }}</strong>
+                                </p>
+                                <p class="text-xs text-slate-400">Owner: {{ r.owner_name }}</p>
+                            </div>
+                            
+                            <div>
+                                {% if r.status == 'approved' %}
+                                    <span class="px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs font-bold">Approved</span>
+                                {% elif r.status == 'rejected' %}
+                                    <span class="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-xs font-bold">Declined</span>
+                                {% else %}
+                                    <span class="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-xs font-bold animate-pulse">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+    </div>
+
+    {% else %}
+    <!-- Matches Results for specific item page -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white mb-2">
+            Matching Analysis
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400">
+            Scanning item: <strong class="text-blue-500 dark:text-blue-400">{{ lost_item.item_name }}</strong> (Category: {{ lost_item.category }})
+        </p>
+    </div>
+
+    {% if not matches %}
+        <div class="glass-panel p-10 rounded-3xl text-center border border-slate-200/50 dark:border-slate-800/50">
+            <i class="fa-solid fa-face-sad-tear text-slate-400 text-5xl mb-4"></i>
+            <h3 class="text-lg font-bold text-slate-700 dark:text-slate-350">No potential matches found yet</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-2">
+                We'll notify you via email the moment someone reports an item that matches your descriptions! Keep checking back.
+            </p>
+            <a href="{{ url_for('index') }}" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors text-sm shadow-md shadow-blue-500/25">
+                Go back Home
+            </a>
+        </div>
+    {% else %}
+        <div class="space-y-6">
+            {% for m in matches %}
+                <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 flex flex-col md:flex-row gap-6 items-start relative overflow-hidden">
+                    
+                    <!-- Score Indicator Ribbon -->
+                    <div class="absolute top-0 right-0 p-3 bg-blue-600/10 dark:bg-blue-500/20 rounded-bl-3xl border-l border-b border-slate-200/40 dark:border-slate-800/40 text-center min-w-[70px]">
+                        <div class="text-2xl font-black font-outfit text-blue-600 dark:text-blue-400">{{ m.breakdown.overall_score }}%</div>
+                        <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Similarity</div>
+                    </div>
+
+                    <!-- Item Image preview -->
+                    <div class="w-full md:w-44 h-44 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-850 flex-shrink-0 border border-slate-200/30">
+                        {% if m.image_path %}
+                            <img src="{% if m.image_path.startswith('http') %}{{ m.image_path }}{% else %}{{ url_for('static', filename='uploads/' + m.image_path.split('/')[-1]) }}{% endif %}" class="w-full h-full object-cover" alt="Matched Item">
+                        {% else %}
+                            <div class="w-full h-full flex flex-col justify-center items-center text-slate-400">
+                                <i class="fa-solid fa-image text-3xl mb-1"></i>
+                                <span class="text-[10px]">No image uploaded</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Item Metadata -->
+                    <div class="flex-grow min-w-0">
+                        <div class="mb-3">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-350">
+                                Found Listing
+                            </span>
+                            <h2 class="text-xl font-bold font-outfit text-slate-800 dark:text-white mt-1">
+                                {{ m.item_name }}
+                            </h2>
+                            <p class="text-xs text-slate-400">
+                                Found on {{ m.date_found }} at {{ m.location }}
+                            </p>
+                        </div>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">
+                            {{ m.description }}
+                        </p>
+
+                        <!-- Scores Breakdown Drawer -->
+                        <div class="mb-6">
+                            <button onclick="toggleBreakdown('breakdown-{{ m.id }}')" class="text-xs font-bold text-blue-500 hover:text-blue-600 flex items-center space-x-1 focus:outline-none">
+                                <span>View AI Match Score Breakdown</span>
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+                            <div id="breakdown-{{ m.id }}" class="hidden mt-3 p-4 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Image Match (40%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">
+                                        {% if m.breakdown.image_score is not none %}{{ m.breakdown.image_score }}%{% else %}N/A (No image){% endif %}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Name Similarity (20%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">{{ m.breakdown.name_score }}%</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Description (15%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">{{ m.breakdown.desc_score }}%</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Category Match (10%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">{{ m.breakdown.category_score }}%</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Location Radius (10%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">{{ m.breakdown.location_score }}%</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block mb-0.5">Date Similarity (5%)</span>
+                                    <strong class="text-slate-700 dark:text-slate-200">{{ m.breakdown.date_score }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Secure Contact Area -->
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                    <i class="fa-solid fa-shield-halved mr-1 text-blue-500"></i> Contact Details
+                                </h4>
+                                {% if m.has_permission %}
+                                    <div class="text-sm space-y-1">
+                                        <p class="text-slate-700 dark:text-slate-250">
+                                            <i class="fa-solid fa-user-tie mr-1 text-slate-400"></i> Finder: <strong>{{ m.finder_name }}</strong>
+                                        </p>
+                                        <p class="text-slate-700 dark:text-slate-250">
+                                            <i class="fa-solid fa-phone mr-1 text-slate-400"></i> Phone: <strong>{{ m.contact_number }}</strong>
+                                        </p>
+                                        <p class="text-slate-700 dark:text-slate-250">
+                                            <i class="fa-solid fa-envelope mr-1 text-slate-400"></i> Email: <strong>{{ m.email }}</strong>
+                                        </p>
+                                    </div>
+                                {% else %}
+                                    <p class="text-xs text-slate-500">
+                                        Contact details are locked for privacy. You must exchange approvals to view info.
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-shrink-0">
+                                {% if m.has_permission %}
+                                    <a href="{{ url_for('chat.conversation', partner_id=m.user_id) }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all">
+                                        <i class="fa-solid fa-comment-dots mr-1"></i> Start Secure Live Chat
+                                    </a>
+                                {% else %}
+                                    {% if m.request_status == 'pending' %}
+                                        <button disabled class="inline-flex items-center px-4 py-2 rounded-lg bg-amber-100 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-xs font-semibold border border-amber-200 dark:border-amber-900 cursor-not-allowed">
+                                            <i class="fa-solid fa-hourglass-half mr-1 animate-spin"></i> Request Pending Approval
+                                        </button>
+                                    {% elif m.request_status == 'rejected' %}
+                                        <span class="inline-block px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/10 text-red-600 dark:text-red-400 text-xs font-semibold border border-red-100 dark:border-red-900">
+                                            Request Declined
+                                        </span>
+                                    {% else %}
+                                        <form action="{{ url_for('matches.request_contact', item_type='found', item_id=m.id, owner_id=m.user_id) }}" method="POST">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="lost_id" value="{{ lost_item.id }}">
+                                            <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all">
+                                                <i class="fa-solid fa-key mr-1"></i> Request Contact Access
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<script>
+    function toggleBreakdown(id) {
+        const el = document.getElementById(id);
+        if (el.classList.contains('hidden')) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}

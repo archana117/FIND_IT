@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="mb-10 text-center md:text-left">
+        <h1 class="text-3xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white mb-2">
+            Search & Browse Items
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400">
+            Browse through all reported lost and found items. Use filters to narrow down your search.
+        </p>
+    </div>
+
+    <!-- Filters Bar Card -->
+    <div class="glass-panel rounded-3xl shadow-lg p-6 mb-10 border border-slate-200/50 dark:border-slate-800/50">
+        <form action="{{ url_for('search') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- Text Search -->
+            <div>
+                <label for="q" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-450 mb-1.5">Item Name / Keyword</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" name="q" id="q" value="{{ filters.q or '' }}"
+                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                        placeholder="Search...">
+                </div>
+            </div>
+
+            <!-- Search Type Filter -->
+            <div>
+                <label for="search_type" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-1.5">Search Engine</label>
+                <select name="search_type" id="search_type" onchange="toggleSearchTypeFields()"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm">
+                    <option value="semantic" {% if filters.search_type == 'semantic' or not filters.search_type %}selected{% endif %}>AI Semantic Vector</option>
+                    <option value="keyword" {% if filters.search_type == 'keyword' %}selected{% endif %}>Standard Keyword</option>
+                    <option value="gps" {% if filters.search_type == 'gps' %}selected{% endif %}>Nearby GPS Radius</option>
+                </select>
+            </div>
+
+            <!-- Category Filter -->
+            <div>
+                <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-1.5">Category</label>
+                <select name="category" id="category"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm">
+                    <option value="">All Categories</option>
+                    <option value="Mobile Phone" {% if filters.category == 'Mobile Phone' %}selected{% endif %}>Mobile Phone</option>
+                    <option value="Wallet" {% if filters.category == 'Wallet' %}selected{% endif %}>Wallet</option>
+                    <option value="Keys" {% if filters.category == 'Keys' %}selected{% endif %}>Keys</option>
+                    <option value="Laptop" {% if filters.category == 'Laptop' %}selected{% endif %}>Laptop</option>
+                    <option value="ID Card" {% if filters.category == 'ID Card' %}selected{% endif %}>ID Card</option>
+                    <option value="Earbuds" {% if filters.category == 'Earbuds' %}selected{% endif %}>Earbuds</option>
+                    <option value="Watch" {% if filters.category == 'Watch' %}selected{% endif %}>Watch</option>
+                    <option value="Bag" {% if filters.category == 'Bag' %}selected{% endif %}>Bag</option>
+                    <option value="Bottle" {% if filters.category == 'Bottle' %}selected{% endif %}>Bottle</option>
+                    <option value="Passport" {% if filters.category == 'Passport' %}selected{% endif %}>Passport</option>
+                    <option value="Purse" {% if filters.category == 'Purse' %}selected{% endif %}>Purse</option>
+                    <option value="Electronics" {% if filters.category == 'Electronics' %}selected{% endif %}>Electronics</option>
+                    <option value="Others" {% if filters.category == 'Others' %}selected{% endif %}>Others</option>
+                </select>
+            </div>
+
+            <!-- Location Filter -->
+            <div>
+                <label for="location" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-1.5">Location</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </span>
+                    <input type="text" name="location" id="location" value="{{ filters.location or '' }}"
+                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                        placeholder="Filter location...">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label for="status" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-1.5">Status</label>
+                <select name="status" id="status"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm">
+                    <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Items</option>
+                    <option value="lost" {% if filters.status == 'lost' %}selected{% endif %}>Only Lost</option>
+                    <option value="found" {% if filters.status == 'found' %}selected{% endif %}>Only Found</option>
+                </select>
+            </div>
+
+            <!-- Expandable Geo Proximity Row -->
+            <div id="gps-fields" class="hidden sm:col-span-2 lg:col-span-5 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50 dark:bg-slate-950/20">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div class="md:col-span-2 h-64 rounded-xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-850" id="search-map"></div>
+                    <div>
+                        <label for="radius" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Proximity Search Radius</label>
+                        <select name="radius" id="radius"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm">
+                            <option value="500" {% if filters.radius == '500' %}selected{% endif %}>500 Meters</option>
+                            <option value="1000" {% if filters.radius == '1000' or not filters.radius %}selected{% endif %}>1 Kilometer</option>
+                            <option value="5000" {% if filters.radius == '5000' %}selected{% endif %}>5 Kilometers</option>
+                            <option value="10000" {% if filters.radius == '10000' %}selected{% endif %}>10 Kilometers</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-2">Pin a location on the map to query reported items in that neighborhood.</p>
+                        <input type="hidden" name="lat" id="search-lat" value="{{ filters.lat or '' }}">
+                        <input type="hidden" name="lng" id="search-lng" value="{{ filters.lng or '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Row -->
+            <div class="sm:col-span-2 lg:col-span-5 flex justify-end space-x-3 mt-2">
+                <a href="{{ url_for('search') }}" 
+                    class="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-all">
+                    Reset
+                </a>
+                <button type="submit" 
+                    class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 transition-all flex items-center space-x-1.5">
+                    <i class="fa-solid fa-filter"></i>
+                    <span>Apply Filters</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Map Display (Plotted Pins) -->
+    <div id="results-map-container" class="mb-10 hidden border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-lg">
+        <div id="results-map" class="w-full h-80"></div>
+    </div>
+
+    <!-- Items Grid -->
+    {% if items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for item in items %}
+                {% set is_lost = 'date_lost' in item.keys() %}
+                <div class="glass-panel glow-card rounded-3xl overflow-hidden flex flex-col h-full shadow-lg border border-slate-200/50 dark:border-slate-800/30">
+                    <div class="relative h-48 bg-slate-200 dark:bg-slate-850 overflow-hidden flex items-center justify-center">
+                        {% if item.image_path %}
+                            <img src="{% if item.image_path.startswith('http') %}{{ item.image_path }}{% else %}{{ url_for('static', filename='uploads/' + item.image_path.split('/')[-1]) }}{% endif %}" alt="{{ item.item_name }}" class="object-cover w-full h-full">
+                        {% else %}
+                            <div class="text-center text-slate-400">
+                                <i class="fa-solid fa-image text-4xl mb-2"></i>
+                                <p class="text-xs">No Image Available</p>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Status Badge -->
+                        {% if is_lost %}
+                            <span class="absolute top-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500 text-white shadow-sm">LOST</span>
+                        {% else %}
+                            <span class="absolute top-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500 text-white shadow-sm">FOUND</span>
+                        {% endif %}
+                        
+                        <!-- Category Badge -->
+                        <span class="absolute bottom-4 left-4 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900/60 backdrop-blur-md text-white border border-white/20">
+                            {{ item.category }}
+                        </span>
+                    </div>
+
+                    <div class="p-6 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 font-outfit">{{ item.item_name }}</h3>
+                                {% if item.search_score and item.search_score < 100 %}
+                                    <span class="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded">
+                                        {{ item.search_score }}% match
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 mb-4 leading-relaxed">{{ item.description }}</p>
+                        </div>
+                        
+                        <div class="border-t border-slate-100 dark:border-slate-800 pt-4 mt-auto">
+                            <!-- Date & Location -->
+                            <div class="flex flex-col space-y-2 mb-4">
+                                <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                    <i class="fa-solid fa-location-dot w-4 {% if is_lost %}text-red-500{% else %}text-emerald-500{% endif %}"></i>
+                                    <span class="truncate ml-1">{{ item.location }}</span>
+                                    {% if item.distance_km %}
+                                        <span class="ml-2 font-bold text-blue-600 dark:text-blue-400">({{ item.distance_km }} km away)</span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                    <i class="fa-solid fa-calendar w-4 {% if is_lost %}text-red-500{% else %}text-emerald-500{% endif %}"></i>
+                                    <span class="ml-1">{% if is_lost %}{{ item.date_lost }}{% else %}{{ item.date_found }}{% endif %}</span>
+                                </div>
+                                <div class="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                                    <i class="fa-solid fa-user w-4 text-slate-400"></i>
+                                    <span class="ml-1 truncate">Reported by: {% if is_lost %}{{ item.owner_name }}{% else %}{{ item.finder_name }}{% endif %}</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex justify-between items-center gap-2 pt-2">
+                                {% if is_lost %}
+                                    {% if session.get('user_id') %}
+                                        {% if item.user_id == session['user_id'] %}
+                                            <a href="{{ url_for('matches.match_results', lost_id=item.id) }}"
+                                                class="flex-grow py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-semibold text-xs text-center transition-all flex items-center justify-center space-x-1">
+                                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                                <span>AI Matches</span>
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('chat.conversation', partner_id=item.user_id) }}" 
+                                               class="flex-grow py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs text-center transition-all flex items-center justify-center space-x-1">
+                                                <i class="fa-solid fa-comment-dots"></i>
+                                                <span>Chat with Owner</span>
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="{{ url_for('auth.login') }}" 
+                                           class="flex-grow py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-semibold text-xs text-center transition-all">
+                                            Login to Contact
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- Secure details access check -->
+                                    {% if session.get('user_id') %}
+                                        {% if item.user_id == session['user_id'] %}
+                                            <span class="flex-grow py-2 text-center text-xs text-slate-400 font-semibold">My Listing</span>
+                                        {% else %}
+                                            <a href="{{ url_for('chat.conversation', partner_id=item.user_id) }}" 
+                                               class="flex-grow py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs text-center transition-all flex items-center justify-center space-x-1">
+                                                <i class="fa-solid fa-comment-dots"></i>
+                                                <span>Chat with Finder</span>
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="{{ url_for('auth.login') }}" 
+                                           class="flex-grow py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-semibold text-xs text-center transition-all">
+                                            Login to Contact
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                <!-- Flag Spam Icon -->
+                                <button onclick="flagAsSpam('{{ is_lost and 'lost' or 'found' }}', {{ item.id }})" 
+                                    class="p-2 text-slate-400 hover:text-red-500 transition-colors text-xs flex items-center space-x-1" 
+                                    title="Report Spam">
+                                    <i class="fa-solid fa-flag"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-20 bg-white/40 dark:bg-slate-950/20 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-800/30">
+            <i class="fa-regular fa-folder-open text-6xl text-slate-300 dark:text-slate-700 mb-4"></i>
+            <h3 class="text-xl font-bold font-outfit text-slate-700 dark:text-slate-350">No Items Found</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Try adjusting your filters or search keywords.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Scripts for Coordinate map selections and plotters -->
+<script>
+    let filterMap, searchMarker;
+    let resultsMap;
+    const defaultLat = 40.7128;
+    const defaultLng = -74.0060;
+
+    function toggleSearchTypeFields() {
+        const type = document.getElementById('search_type').value;
+        const gpsFields = document.getElementById('gps-fields');
+        if (type === 'gps') {
+            gpsFields.classList.remove('hidden');
+            setTimeout(initSearchMap, 100);
+        } else {
+            gpsFields.classList.add('hidden');
+        }
+    }
+
+    function initSearchMap() {
+        if (filterMap) return;
+        
+        const initialLat = parseFloat(document.getElementById('search-lat').value) || defaultLat;
+        const initialLng = parseFloat(document.getElementById('search-lng').value) || defaultLng;
+
+        filterMap = L.map('search-map').setView([initialLat, initialLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(filterMap);
+
+        searchMarker = L.marker([initialLat, initialLng], { draggable: true }).addTo(filterMap);
+        
+        searchMarker.on('dragend', function() {
+            const pos = searchMarker.getLatLng();
+            document.getElementById('search-lat').value = pos.lat;
+            document.getElementById('search-lng').value = pos.lng;
+        });
+
+        filterMap.on('click', function(e) {
+            searchMarker.setLatLng(e.latlng);
+            document.getElementById('search-lat').value = e.latlng.lat;
+            document.getElementById('search-lng').value = e.latlng.lng;
+        });
+        
+        // Geolocate to start if values are empty
+        if (!document.getElementById('search-lat').value && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                filterMap.setView([lat, lng], 14);
+                searchMarker.setLatLng([lat, lng]);
+                document.getElementById('search-lat').value = lat;
+                document.getElementById('search-lng').value = lng;
+            });
+        }
+    }
+
+    // Results Pins Mapping
+    function initResultsMap() {
+        // Collect geolocated items from the page
+        const itemsWithCoords = [];
+        {% for item in items %}
+            {% if item.latitude is not none and item.longitude is not none %}
+                itemsWithCoords.push({
+                    name: "{{ item.item_name }}",
+                    lat: {{ item.latitude }},
+                    lng: {{ item.longitude }},
+                    type: "{{ 'date_lost' in item.keys() and 'Lost' or 'Found' }}",
+                    location: "{{ item.location }}",
+                    id: {{ item.id }}
+                });
+            {% endif %}
+        {% endfor %}
+
+        if (itemsWithCoords.length === 0) return;
+
+        document.getElementById('results-map-container').classList.remove('hidden');
+        resultsMap = L.map('results-map').setView([itemsWithCoords[0].lat, itemsWithCoords[0].lng], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(resultsMap);
+
+        const group = [];
+        itemsWithCoords.forEach(item => {
+            const markerColor = item.type === 'Lost' ? '#ef4444' : '#10b981';
+            const popupHtml = `
+                <div class="text-xs">
+                    <strong class="text-slate-800 block">${item.name}</strong>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white uppercase block mt-1 w-max" style="background-color: ${markerColor}">
+                        ${item.type}
+                    </span>
+                    <p class="text-slate-400 mt-1">${item.location}</p>
+                </div>
+            `;
+            const m = L.marker([item.lat, item.lng]).addTo(resultsMap).bindPopup(popupHtml);
+            group.push(m);
+        });
+
+        // Auto-zoom to fit all pins
+        const featureGroup = L.featureGroup(group);
+        resultsMap.fitBounds(featureGroup.getBounds().pad(0.1));
+    }
+
+    // Spam Reporting AJAX trigger
+    function flagAsSpam(itemType, itemId) {
+        if (!confirm('Flag this item listing as fake or spam?')) return;
+        
+        fetch(`/api/report-fake/${itemType}/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': '{{ csrf_token() }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Thank you. The listing has been reported to administrators for inspection.');
+                window.location.reload();
+            } else {
+                alert('Failed to report listing.');
+            }
+        })
+        .catch(() => alert('Failed to report listing.'));
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleSearchTypeFields();
+        initResultsMap();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{
+  "name": "FindIt AI Platform",
+  "short_name": "FindIt",
+  "description": "Report, scan, and recover your lost belongings using artificial intelligence and location mapping.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/825/825590.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

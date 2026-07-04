@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white mb-2">
+            Report Found Item
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+            Report an item you have found. Please provide clear details and upload a photo so the owner can identify and verify their item.
+        </p>
+    </div>
+
+    <!-- Form container -->
+    <div class="glass-panel rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-200/50 dark:border-slate-800/50">
+        <form id="report-form" action="{{ url_for('items.report_found') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Section 1: Upload Image & AI Auto-fill -->
+            <div>
+                <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-200 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <i class="fa-solid fa-camera text-emerald-500 mr-2"></i> Upload Item Image *
+                </h3>
+                <div class="space-y-4">
+                    <div id="upload-dropzone" class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all relative">
+                        <input type="file" name="image" id="image-upload" accept="image/*" required class="hidden">
+                        
+                        <!-- AI Loading Spinner Overlay -->
+                        <div id="ai-loading" class="hidden absolute inset-0 bg-slate-900/70 backdrop-blur-sm rounded-2xl flex flex-col justify-center items-center text-white z-10">
+                            <i class="fa-solid fa-robot text-4xl mb-3 animate-bounce text-emerald-400"></i>
+                            <p class="font-semibold text-sm">AI analyzing image features & OCR text...</p>
+                            <p class="text-xs text-slate-300 mt-1">This will auto-fill your fields</p>
+                        </div>
+                        
+                        <div id="dropzone-prompt" class="space-y-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Drag & drop your item image here, or <span class="text-blue-500 font-medium">browse files</span></p>
+                            <p class="text-xs text-slate-400">Supports JPEG, PNG, WEBP (Max 16MB) - Image is required for found items.</p>
+                        </div>
+                        <div id="image-preview-container" class="hidden flex justify-center">
+                            <div class="relative w-48 h-48 rounded-xl overflow-hidden shadow-md">
+                                <img id="image-preview" src="#" alt="Preview" class="object-cover w-full h-full">
+                                <button type="button" id="remove-img-btn"
+                                    class="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 hover:bg-red-600 text-white transition-colors z-20">
+                                    <i class="fa-solid fa-xmark text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-feedback" class="hidden p-4 rounded-xl bg-blue-50/50 dark:bg-slate-800/40 border border-blue-100 dark:border-slate-850 flex items-start space-x-3">
+                        <i class="fa-solid fa-circle-check text-green-500 text-lg mt-0.5"></i>
+                        <div>
+                            <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-400">AI Classification Complete</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-1" id="ai-feedback-text"></p>
+                            <button type="button" id="generate-desc-btn" class="mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate AI description sentence
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Item Details -->
+            <div>
+                <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-200 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <i class="fa-solid fa-cube text-emerald-500 mr-2"></i> Item Information
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Item Name -->
+                    <div>
+                        <label for="item_name" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Item Name *</label>
+                        <div class="relative">
+                            <input type="text" name="item_name" id="item_name" required
+                                class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                                placeholder="e.g. Black Backpack, Keys with Red Keychain">
+                            <button type="button" onclick="startSpeech('item_name')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-blue-500 transition-colors" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Item Category *</label>
+                        <select name="category" id="category" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm">
+                            <option value="" disabled selected>Select category</option>
+                            <option value="Mobile Phone">Mobile Phone</option>
+                            <option value="Wallet">Wallet</option>
+                            <option value="Keys">Keys</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="ID Card">ID Card</option>
+                            <option value="Earbuds">Earbuds</option>
+                            <option value="Watch">Watch</option>
+                            <option value="Bag">Bag</option>
+                            <option value="Bottle">Bottle</option>
+                            <option value="Passport">Passport</option>
+                            <option value="Purse">Purse</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Item Description *</label>
+                        <div class="relative">
+                            <textarea name="description" id="description" rows="4" required
+                                class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                                placeholder="Describe the item (e.g. brand, color, size). Do not share specific secrets (passcodes, inner contents) so you can verify the owner."></textarea>
+                            <button type="button" onclick="startSpeech('description')" class="absolute top-3 right-3 flex items-center text-slate-400 hover:text-blue-500 transition-colors" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Time & Location -->
+            <div>
+                <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-200 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <i class="fa-solid fa-map-location-dot text-emerald-500 mr-2"></i> Date & Location
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Location -->
+                    <div>
+                        <label for="location" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Found Location *</label>
+                        <div class="relative">
+                            <input type="text" name="location" id="location" required
+                                class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                                placeholder="e.g. Central Park (near West Gate), Cafe Coffee Day Table 3">
+                            <button type="button" onclick="startSpeech('location')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-blue-500 transition-colors" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date Found -->
+                    <div>
+                        <label for="date_found" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Date Found *</label>
+                        <input type="date" name="date_found" id="date_found" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm">
+                    </div>
+                    
+                    <!-- Map Picker -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Pin Coordinates on Map</label>
+                        <div id="map-picker" class="w-full h-80 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner"></div>
+                        <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i> Drag or click on the map to pin where you found the item. We use this to calculate proximity search metrics.</p>
+                        
+                        <!-- Latitude and Longitude hidden fields -->
+                        <input type="hidden" name="latitude" id="latitude">
+                        <input type="hidden" name="longitude" id="longitude">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Contact Info -->
+            <div>
+                <h3 class="text-lg font-bold font-outfit text-slate-800 dark:text-slate-200 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <i class="fa-solid fa-address-book text-emerald-500 mr-2"></i> Finder Contact Info
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Finder Name -->
+                    <div>
+                        <label for="finder_name" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Finder Name *</label>
+                        <input type="text" name="finder_name" id="finder_name" required
+                            value="{{ user.username if user else '' }}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="Your full name">
+                    </div>
+
+                    <!-- Contact Number -->
+                    <div>
+                        <label for="contact_number" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Contact Number *</label>
+                        <input type="tel" name="contact_number" id="contact_number" required
+                            value="{{ user.phone if user and user.phone else '' }}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="e.g. +1 (555) 123-4567">
+                    </div>
+
+                    <!-- Email Address -->
+                    <div>
+                        <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Email Address *</label>
+                        <input type="email" name="email" id="email" required
+                            value="{{ user.email if user else '' }}"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="e.g. name@domain.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div>
+                <label for="additional_notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Additional Notes</label>
+                <textarea name="additional_notes" id="additional_notes" rows="2"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                    placeholder="e.g. Handed over to police, left at security counter, contact hours, etc."></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4">
+                <button type="submit" 
+                    class="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 transition-all flex justify-center items-center space-x-2">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                    <span>Submit Found Report</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Page-specific Map and Voice Script -->
+<script>
+    let map, marker;
+    const defaultLat = 40.7128;
+    const defaultLng = -74.0060;
+    
+    function initMap() {
+        map = L.map('map-picker').setView([defaultLat, defaultLng], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                map.setView([lat, lng], 15);
+                setMarker(lat, lng);
+            }, () => {
+                setMarker(defaultLat, defaultLng);
+            });
+        } else {
+            setMarker(defaultLat, defaultLng);
+        }
+        
+        map.on('click', function(e) {
+            setMarker(e.latlng.lat, e.latlng.lng);
+        });
+    }
+    
+    function setMarker(lat, lng) {
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker.on('dragend', function() {
+                const pos = marker.getLatLng();
+                document.getElementById('latitude').value = pos.lat;
+                document.getElementById('longitude').value = pos.lng;
+            });
+        }
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        
+        const dropzone = document.getElementById('upload-dropzone');
+        const fileInput = document.getElementById('image-upload');
+        const previewContainer = document.getElementById('image-preview-container');
+        const previewImg = document.getElementById('image-preview');
+        const dropPrompt = document.getElementById('dropzone-prompt');
+        const loading = document.getElementById('ai-loading');
+        const removeBtn = document.getElementById('remove-img-btn');
+        const aiFeedback = document.getElementById('ai-feedback');
+        const aiFeedbackText = document.getElementById('ai-feedback-text');
+        const genDescBtn = document.getElementById('generate-desc-btn');
+        
+        window.onImageSelected = function(file) {
+            runImageAnalysis(file);
+        };
+        
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            dropPrompt.classList.remove('hidden');
+            aiFeedback.classList.add('hidden');
+        });
+        
+        function runImageAnalysis(file) {
+            loading.classList.remove('hidden');
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            fetch('/api/analyze-image', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                if (data.status === 'success') {
+                    if (data.detected_item && data.detected_item !== 'Unknown Item') {
+                        document.getElementById('item_name').value = data.detected_item;
+                    }
+                    if (data.category) {
+                        const selectEl = document.getElementById('category');
+                        for (let i = 0; i < selectEl.options.length; i++) {
+                            if (selectEl.options[i].value.toLowerCase() === data.category.toLowerCase()) {
+                                selectEl.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    let fb = `Detected: <strong>${data.detected_item}</strong> (Category: ${data.category}). `;
+                    if (data.ocr_text) {
+                        fb += `Extracted text: <em>"${data.ocr_text.substring(0, 100)}..."</em>. `;
+                        
+                        const ocr = data.ocr_details;
+                        let extraDetails = [];
+                        if (ocr.name) extraDetails.push(`Name: ${ocr.name}`);
+                        if (ocr.id_number) extraDetails.push(`ID: ${ocr.id_number}`);
+                        if (ocr.registration_number) extraDetails.push(`Reg No: ${ocr.registration_number}`);
+                        if (ocr.college_name) extraDetails.push(`College: ${ocr.college_name}`);
+                        if (ocr.vehicle_number) extraDetails.push(`Plate: ${ocr.vehicle_number}`);
+                        if (ocr.passport_number) extraDetails.push(`Passport: ${ocr.passport_number}`);
+                        
+                        if (extraDetails.length > 0) {
+                            fb += `<br>OCR Details found: ${extraDetails.join(', ')}. <button type="button" class="text-blue-500 font-bold hover:underline" onclick="appendOcrDetails('${extraDetails.join("; ")}')">Append to Description</button>`;
+                        }
+                    }
+                    aiFeedbackText.innerHTML = fb;
+                    aiFeedback.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                console.error("AI analysis error:", err);
+            });
+        }
+        
+        genDescBtn.addEventListener('click', function() {
+            const file = fileInput.files[0];
+            const cat = document.getElementById('category').value;
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('category', cat);
+            
+            genDescBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Generating...';
+            
+            fetch('/api/generate-description', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                genDescBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate AI description sentence';
+                if (data.status === 'success' && data.description) {
+                    document.getElementById('description').value = data.description;
+                }
+            })
+            .catch(() => {
+                genDescBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generate AI description sentence';
+            });
+        });
+    });
+    
+    function appendOcrDetails(details) {
+        const descInput = document.getElementById('description');
+        descInput.value = descInput.value + (descInput.value ? "\n" : "") + "[Extracted OCR details: " + details + "]";
+    }
+    
+    function startSpeech(targetId) {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        
+        const inputField = document.getElementById(targetId);
+        const micIcon = document.querySelector(`[onclick="startSpeech('${targetId}')"] i`);
+        if (micIcon) {
+            micIcon.className = "fa-solid fa-microphone animate-ping text-red-500";
+        }
+        
+        recognition.start();
+        
+        recognition.onresult = function(event) {
+            const speechResult = event.results[0][0].transcript;
+            inputField.value = inputField.value ? inputField.value + ' ' + speechResult : speechResult;
+        };
+        
+        recognition.onend = function() {
+            if (micIcon) {
+                micIcon.className = "fa-solid fa-microphone";
+            }
+        };
+        
+        recognition.onerror = function() {
+            if (micIcon) {
+                micIcon.className = "fa-solid fa-microphone";
+            }
+        };
+    }
+</script>
+{% endblock %}

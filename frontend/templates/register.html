@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-[85vh] flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <!-- Background Blob Glows -->
+    <div class="absolute top-[10%] left-[20%] w-[300px] h-[300px] rounded-full bg-blue-500/10 blur-[80px] pointer-events-none"></div>
+    <div class="absolute bottom-[10%] right-[20%] w-[300px] h-[300px] rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none"></div>
+
+    <div class="w-full max-w-lg relative">
+        <div class="glass-panel rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-200/50 dark:border-slate-800/50">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-extrabold font-outfit text-slate-900 dark:text-white mb-2">Create Account</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Join FindIt to report and recover lost items</p>
+            </div>
+            
+            <form action="{{ url_for('auth.register') }}" method="POST" class="space-y-5">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-2">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" name="username" id="username" required
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="username123">
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-2">Email Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-envelope"></i>
+                        </span>
+                        <input type="email" name="email" id="email" required
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="name@example.com">
+                    </div>
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-2">Contact Number</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-phone"></i>
+                        </span>
+                        <input type="tel" name="phone" id="phone"
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="+1 (555) 000-0000">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-455 mb-2">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" name="password" id="password" required
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-slate-100 transition-all text-sm"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                    class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all flex justify-center items-center space-x-2 mt-2">
+                    <span>Create Account</span>
+                    <i class="fa-solid fa-user-plus text-xs"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 text-center border-t border-slate-200/50 dark:border-slate-800/40 pt-6">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Already have an account? 
+                    <a href="{{ url_for('auth.login') }}" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
